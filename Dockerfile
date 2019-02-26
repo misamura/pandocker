@@ -30,6 +30,10 @@ RUN set -x && \
         # for deployment
         openssh-client \
         rsync \
+        # for cabal (haskell package manager)
+        cabal-install \
+        zlibc \
+        libghc-zlib-dev \
         # latex toolchain
         lmodern \
         texlive \
@@ -57,7 +61,6 @@ RUN set -x && \
         python3-yaml \
         # required for PDF meta analysis
         poppler-utils \
-        zlibc \
 		# for emojis
 		librsvg2-bin \
     # add en_US Locale including UTF-8 support
@@ -68,7 +71,7 @@ RUN set -x && \
     rm -rf /var/lib/apt/lists/* /etc/apt/apt.conf.d/01proxy
 
 #
-# Set Locale for UTF-8 support
+# Set a Locale for UTF-8 support (in this case en_US)
 #
 ENV LANG en_US.UTF-8
 
@@ -87,7 +90,17 @@ RUN mkdir -p ~/.ssh && \
 ADD cache/ ./cache
 
 #
+# Install Pandoc haskell filters
+#
+RUN cabal update
+#RUN cabal install Cabal cabal-install
+RUN cabal sandbox init
+RUN cabal install pandoc-crossref
+RUN cabal install pandoc-siteproc
+
+#
 # Install pandoc from upstream. Debian package is too old.
+# Cabal also installed an old Pandoc version that will be overwritten here on purpose
 #
 ARG PANDOC_VERSION=2.6
 ADD fetch-pandoc.sh /usr/local/bin/
@@ -96,7 +109,7 @@ RUN fetch-pandoc.sh ${PANDOC_VERSION} ./cache/pandoc.deb && \
     rm -f ./cache/pandoc.deb
 
 #
-# Pandoc filters
+# Install Pandoc python filters
 #
 ADD requirements.txt ./
 RUN pip3 --no-cache-dir install --find-links file://${PWD}/cache -r requirements.txt
