@@ -5,7 +5,7 @@
 #    https://github.com/geometalab/docker-pandoc/blob/develop/Dockerfile
 #    https://github.com/vpetersson/docker-pandoc/blob/master/Dockerfile
 
-FROM debian:stretch-slim
+FROM haskell
 
 # Proxy to APT cacher: e.g. http://apt-cacher-ng.docker:3142
 ARG APT_CACHER
@@ -30,17 +30,6 @@ RUN set -x && \
         # for deployment
         openssh-client \
         rsync \
-        # for ghc (haskell compiler) cabal (haskell package manager)
-        zlibc \
-#        zlib1g \
-#        zlib1g-dev \
-        libghc-zlib-dev \
-        libghc-zlib-prof \
-        libghc-zlib-bindings-dev \
-        libghc-zlib-bindings-prof \
-        ghc \
-        ghc-prof \
-        ghc-doc \
         # latex toolchain
         lmodern \
         texlive \
@@ -61,6 +50,7 @@ RUN set -x && \
         parallel \
         wget \
         unzip \
+        zlibc \
         # panflute requirements
         python3-pip \
         python3-setuptools \
@@ -96,45 +86,18 @@ RUN mkdir -p ~/.ssh && \
 #
 ADD cache/ ./cache
 
-
-#
-# Install cabal-install (Haskell build manager) from sources using ghc (haskell compiler)
-#
-RUN wget --output-document ./cache/cabal-install-2.4.1.0.tar.gz http://hackage.haskell.org/package/cabal-install-2.4.1.0/cabal-install-2.4.1.0.tar.gz && \
-    tar xvfz ./cache/cabal-install-2.4.1.0.tar.gz --directory cache/ && \
-    cd ./cache/cabal-install-2.4.1.0 && sh ./bootstrap.sh
-ENV PATH ${PATH}:/root/.cabal/bin/
-
-RUN cabal --version
-
-
-#
-# Update to newest version of cabal (Haskell build manager)
-#
-#RUN cabal update \
-#    && cabal install Cabal cabal-install --global
-#RUN cabal --version
-
 #
 # Install Pandoc haskell filters (using cabal build manager)
 # see https://github.com/lierdakil/pandoc-crossref
 #
-ARG PANDOC_VERSION=2.6
-ARG PANDOC_CROSSREF_VERSION=0.3.4
-ARG PANDOC_CITEPROC_VERSION=0.16.1
-RUN cabal new-update --global
-RUN echo "Inhalt der Config `cat /root/.cabal/config`"
-#    && cabal sandbox init \
-RUN cabal new-install --global --allow-newer \
-#        pandoc-${PANDOC_VERSION} \
+RUN cabal new-update && \
+    cabal new-install --global --force-reinstalls \
         pandoc \
         pandoc-crossref \
         pandoc-citeproc
-#        pandoc-crossref-${PANDOC_CROSSREF_VERSION} \
- #       pandoc-citeproc-${PANDOC_CITEPROC_VERSION}
-
 
 #
+# Legacy way of installing pandoc directly instead of with "cabal-install":
 # Install pandoc from upstream. Debian package is too old.
 # Cabal also installed an old Pandoc version that will be overwritten here on purpose
 #
