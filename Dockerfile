@@ -30,10 +30,17 @@ RUN set -x && \
         # for deployment
         openssh-client \
         rsync \
-        # for cabal (haskell package manager)
-        cabal-install \
+        # for ghc (haskell compiler) cabal (haskell package manager)
         zlibc \
+#        zlib1g \
+#        zlib1g-dev \
         libghc-zlib-dev \
+        libghc-zlib-prof \
+        libghc-zlib-bindings-dev \
+        libghc-zlib-bindings-prof \
+        ghc \
+        ghc-prof \
+        ghc-doc \
         # latex toolchain
         lmodern \
         texlive \
@@ -89,12 +96,24 @@ RUN mkdir -p ~/.ssh && \
 #
 ADD cache/ ./cache
 
+
+#
+# Install cabal-install (Haskell build manager) from sources using ghc (haskell compiler)
+#
+RUN wget --output-document ./cache/cabal-install-2.4.1.0.tar.gz http://hackage.haskell.org/package/cabal-install-2.4.1.0/cabal-install-2.4.1.0.tar.gz && \
+    tar xvfz ./cache/cabal-install-2.4.1.0.tar.gz --directory cache/ && \
+    cd ./cache/cabal-install-2.4.1.0 && sh ./bootstrap.sh
+ENV PATH ${PATH}:/root/.cabal/bin/
+
+RUN cabal --version
+
+
 #
 # Update to newest version of cabal (Haskell build manager)
 #
-RUN cabal update \
-    && cabal install Cabal cabal-install --global
-RUN cabal --version
+#RUN cabal update \
+#    && cabal install Cabal cabal-install --global
+#RUN cabal --version
 
 #
 # Install Pandoc haskell filters (using cabal build manager)
@@ -103,12 +122,16 @@ RUN cabal --version
 ARG PANDOC_VERSION=2.6
 ARG PANDOC_CROSSREF_VERSION=0.3.4
 ARG PANDOC_CITEPROC_VERSION=0.16.1
-RUN cabal new-update \
+RUN cabal new-update --global
+RUN echo "Inhalt der Config `cat /root/.cabal/config`"
 #    && cabal sandbox init \
-    && cabal new-install --global \
-        pandoc-${PANDOC_VERSION} \
-        pandoc-crossref-${PANDOC_CROSSREF_VERSION} \
-        pandoc-citeproc-${PANDOC_CITEPROC_VERSION}
+RUN cabal new-install --global --allow-newer \
+#        pandoc-${PANDOC_VERSION} \
+        pandoc \
+        pandoc-crossref \
+        pandoc-citeproc
+#        pandoc-crossref-${PANDOC_CROSSREF_VERSION} \
+ #       pandoc-citeproc-${PANDOC_CITEPROC_VERSION}
 
 
 #
