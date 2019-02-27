@@ -90,23 +90,36 @@ RUN mkdir -p ~/.ssh && \
 ADD cache/ ./cache
 
 #
-# Install Pandoc haskell filters
+# Update to newest version of cabal (Haskell build manager)
 #
-RUN cabal update
-#RUN cabal install Cabal cabal-install
-RUN cabal sandbox init
-RUN cabal install pandoc-crossref
-RUN cabal install pandoc-siteproc
+RUN cabal update \
+    && cabal install Cabal cabal-install --global
+RUN cabal --version
+
+#
+# Install Pandoc haskell filters (using cabal build manager)
+# see https://github.com/lierdakil/pandoc-crossref
+#
+ARG PANDOC_VERSION=2.6
+ARG PANDOC_CROSSREF_VERSION=0.3.4
+ARG PANDOC_CITEPROC_VERSION=0.16.1
+RUN cabal new-update \
+#    && cabal sandbox init \
+    && cabal new-install --global \
+        pandoc-${PANDOC_VERSION} \
+        pandoc-crossref-${PANDOC_CROSSREF_VERSION} \
+        pandoc-citeproc-${PANDOC_CITEPROC_VERSION}
+
 
 #
 # Install pandoc from upstream. Debian package is too old.
 # Cabal also installed an old Pandoc version that will be overwritten here on purpose
 #
-ARG PANDOC_VERSION=2.6
-ADD fetch-pandoc.sh /usr/local/bin/
-RUN fetch-pandoc.sh ${PANDOC_VERSION} ./cache/pandoc.deb && \
-    dpkg --install ./cache/pandoc.deb && \
-    rm -f ./cache/pandoc.deb
+# ARG PANDOC_VERSION=2.6
+# ADD fetch-pandoc.sh /usr/local/bin/
+# RUN fetch-pandoc.sh ${PANDOC_VERSION} ./cache/pandoc.deb && \
+#     dpkg --install ./cache/pandoc.deb && \
+#     rm -f ./cache/pandoc.deb
 
 #
 # Install Pandoc python filters
