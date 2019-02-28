@@ -5,7 +5,7 @@
 #    https://github.com/geometalab/docker-pandoc/blob/develop/Dockerfile
 #    https://github.com/vpetersson/docker-pandoc/blob/master/Dockerfile
 
-FROM debian:stretch-slim
+FROM haskell
 
 # Proxy to APT cacher: e.g. http://apt-cacher-ng.docker:3142
 ARG APT_CACHER
@@ -50,6 +50,7 @@ RUN set -x && \
         parallel \
         wget \
         unzip \
+        zlibc \
         # panflute requirements
         python3-pip \
         python3-setuptools \
@@ -57,7 +58,6 @@ RUN set -x && \
         python3-yaml \
         # required for PDF meta analysis
         poppler-utils \
-        zlibc \
 		# for emojis
 		librsvg2-bin \
     # add en_US Locale including UTF-8 support
@@ -68,7 +68,7 @@ RUN set -x && \
     rm -rf /var/lib/apt/lists/* /etc/apt/apt.conf.d/01proxy
 
 #
-# Set Locale for UTF-8 support
+# Set a Locale for UTF-8 support (in this case en_US)
 #
 ENV LANG en_US.UTF-8
 
@@ -87,16 +87,28 @@ RUN mkdir -p ~/.ssh && \
 ADD cache/ ./cache
 
 #
-# Install pandoc from upstream. Debian package is too old.
+# Install Pandoc haskell filters (using cabal build manager)
+# see https://github.com/lierdakil/pandoc-crossref
 #
-ARG PANDOC_VERSION=2.6
-ADD fetch-pandoc.sh /usr/local/bin/
-RUN fetch-pandoc.sh ${PANDOC_VERSION} ./cache/pandoc.deb && \
-    dpkg --install ./cache/pandoc.deb && \
-    rm -f ./cache/pandoc.deb
+RUN cabal new-update && \
+    cabal new-install --global --force-reinstalls \
+        pandoc \
+        pandoc-crossref \
+        pandoc-citeproc
 
 #
-# Pandoc filters
+# Legacy way of installing pandoc directly instead of with "cabal-install":
+# Install pandoc from upstream. Debian package is too old.
+# Cabal also installed an old Pandoc version that will be overwritten here on purpose
+#
+# ARG PANDOC_VERSION=2.6
+# ADD fetch-pandoc.sh /usr/local/bin/
+# RUN fetch-pandoc.sh ${PANDOC_VERSION} ./cache/pandoc.deb && \
+#     dpkg --install ./cache/pandoc.deb && \
+#     rm -f ./cache/pandoc.deb
+
+#
+# Install Pandoc python filters
 #
 ADD requirements.txt ./
 RUN pip3 --no-cache-dir install --find-links file://${PWD}/cache -r requirements.txt
