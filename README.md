@@ -36,7 +36,7 @@ Therefore, it needs to be built first using `docker build`. Depending on the mac
 ## Build it
 
 + Install docker from https://www.docker.com/get-started.
-+ Run `docker build -tag misamura/pandocker .` from the base path of this git project.
++ Run `docker build -t misamura/pandocker .` from the base path of this git project.
 
 
 ### Run it
