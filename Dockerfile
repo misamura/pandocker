@@ -94,7 +94,8 @@ RUN cabal new-update && \
     cabal new-install --global --force-reinstalls \
         pandoc \
         pandoc-crossref \
-        pandoc-citeproc
+        pandoc-citeproc && \
+    cabal clean
 
 #
 # Legacy way of installing pandoc directly instead of with "cabal-install":
